@@ -18,6 +18,7 @@ func main(){
 		Handler: mux,
 		Addr: ":" + port,
 	}
+	mux.Handle("/", http.FileServer(http.Dir(".")))
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
 }
