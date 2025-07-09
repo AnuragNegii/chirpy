@@ -27,8 +27,8 @@ func main(){
 
 	mux.Handle("/app/", apicfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.HandleFunc("GET /api/healthz", handler)
-	mux.HandleFunc("GET /api/metrics", apicfg.writeHandler)
-	mux.HandleFunc("POST /api/reset", apicfg.resetHandler)
+	mux.HandleFunc("GET /admin/metrics", apicfg.writeHandler)
+	mux.HandleFunc("POST /admin/reset", apicfg.resetHandler)
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
 }
@@ -40,13 +40,20 @@ func handler(w http.ResponseWriter, r *http.Request){
 }
 
 func (cfg *apiConfig) writeHandler(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	value := "Hits: " + fmt.Sprintf("%v", cfg.fileServerHits.Load())
-	w.Write([]byte(value))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(fmt.Sprintf(`
+<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+  </body>
+</html>
+	`, cfg.fileServerHits.Load())))
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler{
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		cfg.fileServerHits.Add(1)
 		next.ServeHTTP(w, r)
 	})
