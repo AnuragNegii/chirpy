@@ -26,9 +26,9 @@ func main(){
 	}
 
 	mux.Handle("/app/", apicfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("/healthz", handler)
-	mux.HandleFunc("/metrics", apicfg.writeHandler)
-	mux.HandleFunc("/reset", apicfg.resetHandler)
+	mux.HandleFunc("GET /api/healthz", handler)
+	mux.HandleFunc("GET /api/metrics", apicfg.writeHandler)
+	mux.HandleFunc("POST /api/reset", apicfg.resetHandler)
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
 }
