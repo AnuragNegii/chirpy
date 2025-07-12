@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 )
 
@@ -71,9 +72,10 @@ func hadnle_Chirp(w http.ResponseWriter, r *http.Request){
 	type parameters struct{
 		Body string `json:"body"`
 	}
-	type returnVals struct{
-		Valid bool `json:"valid"`
+	type cleanedReturnVals struct{
+		CleanedBody string `json:"cleaned_body"`
 	}
+	
 	decoder := json.NewDecoder(r.Body) 
 	var params parameters
 	err := decoder.Decode(&params)
@@ -87,10 +89,21 @@ func hadnle_Chirp(w http.ResponseWriter, r *http.Request){
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
 		return
 	}
+	
+	strList := strings.Split(params.Body, " ")
+	wordsList := []string{"kerfuffle", "sharbert", "fornax"}
 
-	respondWithJson(w, http.StatusOK, returnVals{
-		Valid:true,
-	})
+	for i, word := range strList{
+		for _, badWord := range wordsList{
+			if strings.ToLower(word) == badWord{
+				strList[i] = "****"
+			}
+		}
+	}
+	params.Body = strings.Join(strList, " ")
+		respondWithJson(w, http.StatusOK,cleanedReturnVals{
+			CleanedBody: params.Body,
+		})
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string, err error){
@@ -112,7 +125,6 @@ func respondWithError(w http.ResponseWriter, code int, msg string, err error){
 }
 
 func respondWithJson(w http.ResponseWriter, code int, payload interface{}){
-
 	w.Header().Set("Content-Type","application/json")
 	data, err := json.Marshal(payload)
 	if err != nil{
