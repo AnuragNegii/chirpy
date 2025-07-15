@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
 	"github.com/AnuragNegii/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -89,7 +88,7 @@ func (apiConfig *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request){
 }
 
 func (apiConfig *apiConfig) GetChirpsById(w http.ResponseWriter, r *http.Request){
-	chirpId := r.PathValue("chirpId")
+	chirpId := r.PathValue("chirpID")
 	uuidID, err := uuid.Parse(chirpId)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant parse chirpID: %v", err), nil)
