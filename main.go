@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"sync/atomic"
 
 	"github.com/AnuragNegii/chirpy/internal/database"
@@ -53,7 +52,7 @@ func main(){
 	mux.HandleFunc("GET /api/healthz", handler)
 	mux.HandleFunc("GET /admin/metrics", apicfg.writeHandler)
 	mux.HandleFunc("POST /admin/reset", apicfg.ResetHandle)
-	// mux.HandleFunc("POST /api/validate_chirp", apicfg.handleChirp)
+	mux.HandleFunc("POST /api/chirps", apicfg.hadnleChirps)
 	mux.HandleFunc("POST /api/users", apicfg.handleUser)
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
@@ -83,46 +82,6 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler{
 		cfg.fileServerHits.Add(1)
 		next.ServeHTTP(w, r)
 	})
-}
-
-
-
-func hadnle_Chirp(w http.ResponseWriter, r *http.Request){
-	type parameters struct{
-		Body string `json:"body"`
-	}
-	type cleanedReturnVals struct{
-		CleanedBody string `json:"cleaned_body"`
-	}
-	
-	decoder := json.NewDecoder(r.Body) 
-	var params parameters
-	err := decoder.Decode(&params)
-	if err != nil{
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
-		return
-	}
-
-	const maxChirpLength = 140
-	if len(params.Body) > maxChirpLength{
-		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
-		return
-	}
-	
-	strList := strings.Split(params.Body, " ")
-	wordsList := []string{"kerfuffle", "sharbert", "fornax"}
-
-	for i, word := range strList{
-		for _, badWord := range wordsList{
-			if strings.ToLower(word) == badWord{
-				strList[i] = "****"
-			}
-		}
-	}
-	params.Body = strings.Join(strList, " ")
-		respondWithJson(w, http.StatusOK,cleanedReturnVals{
-			CleanedBody: params.Body,
-		})
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string, err error){
