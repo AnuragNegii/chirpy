@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,7 +30,7 @@ func (apiConfig *apiConfig) handleUser(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	
-	user, err := apiConfig.db.CreateUser(context.Background(), rV.Email)
+	user, err := apiConfig.db.CreateUser(r.Context(), rV.Email)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("can create user: %v", err), nil)
 		return

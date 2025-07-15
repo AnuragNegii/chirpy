@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 )
@@ -13,7 +12,7 @@ func (apiConfig *apiConfig) ResetHandle(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	apiConfig.fileServerHits.Store(0)
-	err := apiConfig.db	.ResetUsers(context.Background())
+	err := apiConfig.db	.ResetUsers(r.Context())
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("rest tabel users: %v", err), nil)
 		return

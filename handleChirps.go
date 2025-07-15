@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -50,7 +49,7 @@ func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	post, err := apiConfig.db.CreateChirps(context.Background(), database.CreateChirpsParams{
+	post, err := apiConfig.db.CreateChirps(r.Context(), database.CreateChirpsParams{
 		Body: params.Body,
 		UserID: params.User_id,
 	})
@@ -67,4 +66,45 @@ func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request)
 			Body: post.Body,
 			User_id: post.UserID,
 		})
+}
+
+
+func (apiConfig *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request){
+	var chirps []Posts
+	arrChirps, err := apiConfig.db.GetChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant retrieve all chirps: %v", err), nil)
+		return
+	}
+	for _, r := range arrChirps{
+		chirps = append(chirps, Posts{
+			ID: r.ID,
+			Created_at: r.CreatedAt,
+			Updated_at: r.UpdatedAt,
+			Body: r.Body,
+			User_id: r.UserID,
+		})
+	}
+	respondWithJson(w, http.StatusOK, chirps)
+}
+
+func (apiConfig *apiConfig) GetChirpsById(w http.ResponseWriter, r *http.Request){
+	chirpId := r.PathValue("chirpId")
+	uuidID, err := uuid.Parse(chirpId)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant parse chirpID: %v", err), nil)
+		return
+	}
+	chirp, err := apiConfig.db.GetChirpByID(r.Context(), uuidID)
+	if err != nil{
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant get that chirp: %v", err), nil)
+		return
+	}
+	respondWithJson(w, http.StatusOK, Posts{
+		ID: chirp.ID,
+		Created_at: chirp.CreatedAt,
+		Updated_at: chirp.UpdatedAt,
+		Body: chirp.Body,
+		User_id: chirp.UserID,
+	})
 }
