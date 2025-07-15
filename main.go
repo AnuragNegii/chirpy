@@ -17,7 +17,8 @@ import (
 
 type apiConfig struct{
 	fileServerHits atomic.Int32
-	dbqueries *database.Queries
+	db *database.Queries
+	platform string
 }
 
 func main(){
@@ -29,14 +30,18 @@ func main(){
 		os.Exit(0)
 	}
 	dbQueries := database.New(db)
-
+	pf := os.Getenv("PLATFORM")
+	if pf == ""{
+		log.Fatal("no platform enviroment")
+	}
 	const port = "8080"
 
 	mux := http.NewServeMux()
 
 	apicfg := &apiConfig{
 		fileServerHits: atomic.Int32{},
-		dbqueries: dbQueries,
+		db : dbQueries,
+		platform: pf, 
 	}
 	
 	srvr := &http.Server{
@@ -47,8 +52,9 @@ func main(){
 	mux.Handle("/app/", apicfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.HandleFunc("GET /api/healthz", handler)
 	mux.HandleFunc("GET /admin/metrics", apicfg.writeHandler)
-	mux.HandleFunc("POST /admin/reset", apicfg.resetHandler)
-	mux.HandleFunc("POST /api/validate_chirp", hadnle_Chirp)
+	mux.HandleFunc("POST /admin/reset", apicfg.ResetHandle)
+	// mux.HandleFunc("POST /api/validate_chirp", apicfg.handleChirp)
+	mux.HandleFunc("POST /api/users", apicfg.handleUser)
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
 }
@@ -79,11 +85,7 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler{
 	})
 }
 
-func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
-	cfg.fileServerHits.Store(0)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Metrics reset"))
-}
+
 
 func hadnle_Chirp(w http.ResponseWriter, r *http.Request){
 	type parameters struct{
