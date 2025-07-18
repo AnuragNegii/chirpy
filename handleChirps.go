@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/AnuragNegii/chirpy/internal/auth"
 	"github.com/AnuragNegii/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -21,9 +23,7 @@ type Posts struct{
 func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request){
 	type parameters struct{
 		Body string `json:"body"`
-		User_id uuid.UUID `json:"user_id"`
 	}
-
 	decoder := json.NewDecoder(r.Body) 
 	var params parameters
 	err := decoder.Decode(&params)
@@ -31,7 +31,6 @@ func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
 	}
-
 	const maxChirpLength = 140
 	if len(params.Body) > maxChirpLength{
 		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
@@ -39,7 +38,6 @@ func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request)
 	}
 	strList := strings.Split(params.Body, " ")
 	wordsList := []string{"kerfuffle", "sharbert", "fornax"}
-
 	for i, word := range strList{
 		for _, badWord := range wordsList{
 			if strings.ToLower(word) == badWord{
@@ -47,26 +45,34 @@ func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request)
 			}
 		}
 	}
-
+	jwtString, err := auth.GetBearerToken(r.Header)
+	if err != nil{
+		respondWithError(w ,http.StatusBadRequest, fmt.Sprintf("%v",err), nil)
+		return
+	}
+	userID, err := auth.ValidateJWT(jwtString, apiConfig.secret)
+	if err != nil{
+		respondWithError(w, http.StatusUnauthorized, fmt.Sprintf("%v", err), nil)
+		return 
+	}
+	
+	params.Body = strings.Join(strList, " ")
 	post, err := apiConfig.db.CreateChirps(r.Context(), database.CreateChirpsParams{
 		Body: params.Body,
-		UserID: params.User_id,
+		UserID: userID,
 	})
 	if err != nil{
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("not able to create chirps: %v", err), nil)
 		return
 	}
-
-	params.Body = strings.Join(strList, " ")
 	respondWithJson(w, http.StatusCreated, Posts{
 			ID: post.ID,
 			Created_at: post.CreatedAt,
 			Updated_at: post.UpdatedAt,
 			Body: post.Body,
-			User_id: post.UserID,
+			User_id: userID,
 		})
 }
-
 
 func (apiConfig *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request){
 	var chirps []Posts
