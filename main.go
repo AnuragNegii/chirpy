@@ -18,6 +18,7 @@ type apiConfig struct{
 	fileServerHits atomic.Int32
 	db *database.Queries
 	platform string
+	secret string
 }
 
 func main(){
@@ -33,6 +34,10 @@ func main(){
 	if pf == ""{
 		log.Fatal("no platform enviroment")
 	}
+	secretString := os.Getenv("SECRET")
+	if secretString == ""{
+		log.Fatalf("you need to have a secret bro.")
+	}
 	const port = "8080"
 
 	mux := http.NewServeMux()
@@ -41,6 +46,7 @@ func main(){
 		fileServerHits: atomic.Int32{},
 		db : dbQueries,
 		platform: pf, 
+		secret: secretString,
 	}
 	
 	srvr := &http.Server{
@@ -55,6 +61,7 @@ func main(){
 	mux.HandleFunc("POST /api/chirps", apicfg.hadnleChirps)
 	mux.HandleFunc("POST /api/users", apicfg.handleUser)
 	mux.HandleFunc("GET /api/chirps", apicfg.GetChirps)
+	mux.HandleFunc("POST /api/login", apicfg.handleLogin)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apicfg.GetChirpsById)
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
@@ -104,7 +111,7 @@ func respondWithError(w http.ResponseWriter, code int, msg string, err error){
 
 }
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}){
+func respondWithJson(w http.ResponseWriter, code int, payload interface{}){ 
 	w.Header().Set("Content-Type","application/json")
 	data, err := json.Marshal(payload)
 	if err != nil{

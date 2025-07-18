@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AnuragNegii/chirpy/internal/auth"
+	"github.com/AnuragNegii/chirpy/internal/database"
+
 	"github.com/google/uuid"
 )
 
@@ -19,23 +22,29 @@ type User struct{
 func (apiConfig *apiConfig) handleUser(w http.ResponseWriter, r *http.Request){
 	type returnVals struct{
 		Email string `json:"email"`
+		Password string `json:"password"`
 	}
-
 	var rV returnVals
-
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&rV)
 	if err != nil{
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant decode the request: %v", err), nil)
 		return
 	}
-	
-	user, err := apiConfig.db.CreateUser(r.Context(), rV.Email)
+	newString, err := auth.HashPassword(rV.Password)
+	if err != nil{
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("%v", err), nil)
+		return
+	}
+	rV.Password = newString 
+	user, err := apiConfig.db.CreateUser(r.Context(), database.CreateUserParams{
+		Email: rV.Email,
+		HashedPassword: rV.Password,
+	})
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("can create user: %v", err), nil)
 		return
 	}
-
 	respondWithJson(w, http.StatusCreated, User{
 		ID: user.ID,
 		Created_at: user.CreatedAt,
