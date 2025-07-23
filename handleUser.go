@@ -18,6 +18,7 @@ type User struct{
 	Updated_at time.Time `json:"updated_at"`
 	Email string `json:"email"`
 	Token string `json:"token"`
+	Refresh_token string `json:"refresh_token"`
 }
 
 func (apiConfig *apiConfig) handleUser(w http.ResponseWriter, r *http.Request){

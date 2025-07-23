@@ -62,7 +62,9 @@ func main(){
 	mux.HandleFunc("POST /api/users", apicfg.handleUser)
 	mux.HandleFunc("GET /api/chirps", apicfg.GetChirps)
 	mux.HandleFunc("POST /api/login", apicfg.handleLogin)
+	mux.HandleFunc("POST /api/refresh", apicfg.handleRefresh)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apicfg.GetChirpsById)
+	mux.HandleFunc("POST /api/revoke", apicfg.handleRevoke)
 	fmt.Printf("Starting go Server at port: %v", port)
 	log.Fatal(srvr.ListenAndServe())
 }

@@ -7,15 +7,14 @@ import (
 	"time"
 
 	"github.com/AnuragNegii/chirpy/internal/auth"
+	"github.com/AnuragNegii/chirpy/internal/database"
 )
-
 
 
 func (apiConfig *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request){
 	type Params struct{
 		Email string `json:"email"`	
 		Password string `json:"password"`
-		Expires_In_Seconds time.Duration `json:"expires_in_seconds"`
 	}
 
 	var params Params
@@ -37,21 +36,31 @@ func (apiConfig *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request){
 		respondWithError(w, http.StatusUnauthorized, fmt.Sprintf("%v", err), nil)
 		return
 	}
-	if params.Expires_In_Seconds == 0{
-		params.Expires_In_Seconds =time.Hour
-	}else if params.Expires_In_Seconds > time.Hour {
-		params.Expires_In_Seconds = time.Hour 
-	} 
 	
-	jwtToken, err := auth.MakeJWT(getUser.ID, apiConfig.secret, params.Expires_In_Seconds)
+	jwtToken, err := auth.MakeJWT(getUser.ID, apiConfig.secret)
 	if err != nil{
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("%v", err), nil)
 	}
+
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil{
+	respondWithError(w, http.StatusBadRequest, fmt.Sprintf("%v", err), nil)
+	}	
+	_, err = apiConfig.db.NewRefreshToken(r.Context(), database.NewRefreshTokenParams{
+		Token: refreshToken,
+		UserID: getUser.ID,
+		ExpiresAt: time.Now().Add(60 * 24 * time.Hour),
+	})
+	if err != nil{
+	respondWithError(w, http.StatusBadRequest, fmt.Sprintf("%v", err), nil)
+	}
+
 	respondWithJson(w, http.StatusOK, User{
 		ID: getUser.ID,
 		Created_at: getUser.CreatedAt,
 		Updated_at: getUser.UpdatedAt,
 		Email: getUser.Email,
 		Token: jwtToken,
+		Refresh_token: refreshToken,
 	})
 }
