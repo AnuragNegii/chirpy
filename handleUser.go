@@ -54,3 +54,57 @@ func (apiConfig *apiConfig) handleUser(w http.ResponseWriter, r *http.Request){
 		Email: user.Email,
 	})
 }
+
+func (apiConfig *apiConfig) changeUserEmailAndPass(w http.ResponseWriter, r *http.Request){
+	tokenString, err := auth.GetBearerToken(r.Header)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("response token missing %v", err), nil)
+		return
+	}
+	
+	userId, err := auth.ValidateJWT(tokenString, apiConfig.secret)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("not a validJWT %v", err), nil)
+		return
+	}
+
+	type EmailBody struct{
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+	defer r.Body.Close()
+	var emailBody EmailBody
+	decoder := json.NewDecoder(r.Body)
+	err = decoder.Decode(&emailBody)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("%v", err), nil)
+		return
+	}
+	user, err := apiConfig.db.GetUserFromUserID(r.Context(), userId)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("%v", err), nil)
+		return
+	}
+
+	hashPass, err := auth.HashPassword(emailBody.Password)
+	if err != nil{
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("%v", err), nil)
+		return
+	}
+	err = apiConfig.db.ChangeUserNameAndPassword(r.Context(), database.ChangeUserNameAndPasswordParams{
+		Email: emailBody.Email,
+		HashedPassword: hashPass,
+		ID: user.ID,
+	})	
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("%v", err), nil)
+		return
+	}
+	respondWithJson(w, http.StatusOK, User{
+		ID: user.ID,	
+		Created_at: user.CreatedAt,
+		Updated_at: user.UpdatedAt,	
+		Email: emailBody.Email,
+		Token: tokenString,
+	})
+}

@@ -113,3 +113,7 @@ func (apiConfig *apiConfig) GetChirpsById(w http.ResponseWriter, r *http.Request
 		User_id: chirp.UserID,
 	})
 }
+
+func (apiConfig *apiConfig) deleteChirp(w http.ResponseWriter , r *http.Request){
+
+}

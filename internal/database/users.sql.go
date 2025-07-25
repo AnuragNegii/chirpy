@@ -7,7 +7,28 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
+
+const changeUserNameAndPassword = `-- name: ChangeUserNameAndPassword :exec
+UPDATE users
+    SET email = $1,
+    hashed_password = $2,
+    updated_at = NOW()
+    WHERE id = $3
+`
+
+type ChangeUserNameAndPasswordParams struct {
+	Email          string
+	HashedPassword string
+	ID             uuid.UUID
+}
+
+func (q *Queries) ChangeUserNameAndPassword(ctx context.Context, arg ChangeUserNameAndPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, changeUserNameAndPassword, arg.Email, arg.HashedPassword, arg.ID)
+	return err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users(id, created_at, updated_at, email, hashed_password)
@@ -28,6 +49,23 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.HashedPassword)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Email,
+		&i.HashedPassword,
+	)
+	return i, err
+}
+
+const getUserFromUserID = `-- name: GetUserFromUserID :one
+SELECT id, created_at, updated_at, email, hashed_password FROM users WHERE users.id = $1
+`
+
+func (q *Queries) GetUserFromUserID(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserFromUserID, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
