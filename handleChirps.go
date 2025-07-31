@@ -102,7 +102,7 @@ func (apiConfig *apiConfig) GetChirpsById(w http.ResponseWriter, r *http.Request
 	}
 	chirp, err := apiConfig.db.GetChirpByID(r.Context(), uuidID)
 	if err != nil{
-		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant get that chirp: %v", err), nil)
+		respondWithError(w, 404, fmt.Sprintf("no chirp found like that: %v", err), nil)
 		return
 	}
 	respondWithJson(w, http.StatusOK, Posts{
@@ -115,5 +115,36 @@ func (apiConfig *apiConfig) GetChirpsById(w http.ResponseWriter, r *http.Request
 }
 
 func (apiConfig *apiConfig) deleteChirp(w http.ResponseWriter , r *http.Request){
-
+	chirpID := r.PathValue("chirpID")	
+	uuidID, err := uuid.Parse(chirpID)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("cant parse chirpID: %v", err), nil)
+		return
+	}
+	stringToken, err := auth.GetBearerToken(r.Header)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("%v", err), nil)
+		return
+	}
+	userJWTString, err := auth.ValidateJWT(stringToken, apiConfig.secret)
+	if err != nil{
+		respondWithError(w, 401, fmt.Sprintf("%v" , err), nil)	
+		return
+	}
+	
+	chirp, err := apiConfig.db.GetChirpByID(r.Context(), uuidID)
+	if err != nil{
+		respondWithError(w, 404, fmt.Sprintf("%v", err), nil)
+		return
+	}
+	if chirp.UserID == userJWTString{
+		err = apiConfig.db.DeleteChirp(r.Context(), chirp.ID)
+		if err != nil {
+			respondWithError(w, 404, fmt.Sprintf("%v", err), nil)
+			return
+			}
+		w.WriteHeader(204)
+		}
+	respondWithError(w, 403, fmt.Sprintf("not the author of the chirp"), nil)
 }
+
