@@ -19,6 +19,7 @@ type apiConfig struct{
 	db *database.Queries
 	platform string
 	secret string
+	polkaKey string
 }
 
 func main(){
@@ -39,6 +40,10 @@ func main(){
 		log.Fatalf("you need to have a secret bro.")
 	}
 	const port = "8080"
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == ""{
+		log.Fatal("no POLKA key found")
+	}
 
 	mux := http.NewServeMux()
 
@@ -47,6 +52,7 @@ func main(){
 		db : dbQueries,
 		platform: pf, 
 		secret: secretString,
+		polkaKey: polkaKey,
 	}
 	
 	srvr := &http.Server{
@@ -65,6 +71,7 @@ func main(){
 	mux.HandleFunc("POST /api/refresh", apicfg.handleRefresh)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apicfg.GetChirpsById)
 	mux.HandleFunc("POST /api/revoke", apicfg.handleRevoke)
+	mux.HandleFunc("POST /api/polka/webhooks", apicfg.handleWebhooks)
 	mux.HandleFunc("PUT /api/users", apicfg.changeUserEmailAndPass)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apicfg.deleteChirp)
 	fmt.Printf("Starting go Server at port: %v", port)

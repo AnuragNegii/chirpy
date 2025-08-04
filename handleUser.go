@@ -19,6 +19,7 @@ type User struct{
 	Email string `json:"email"`
 	Token string `json:"token"`
 	Refresh_token string `json:"refresh_token"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 func (apiConfig *apiConfig) handleUser(w http.ResponseWriter, r *http.Request){
@@ -52,6 +53,7 @@ func (apiConfig *apiConfig) handleUser(w http.ResponseWriter, r *http.Request){
 		Created_at: user.CreatedAt,
 		Updated_at: user.UpdatedAt,
 		Email: user.Email,
+		IsChirpyRed: user.IsChirpyRed.Bool,
 	})
 }
 
@@ -106,5 +108,6 @@ func (apiConfig *apiConfig) changeUserEmailAndPass(w http.ResponseWriter, r *htt
 		Updated_at: user.UpdatedAt,	
 		Email: emailBody.Email,
 		Token: tokenString,
+		IsChirpyRed: user.IsChirpyRed.Bool,
 	})
 }

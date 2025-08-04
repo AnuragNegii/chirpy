@@ -62,5 +62,6 @@ func (apiConfig *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request){
 		Email: getUser.Email,
 		Token: jwtToken,
 		Refresh_token: refreshToken,
+		IsChirpyRed: getUser.IsChirpyRed.Bool,
 	})
 }

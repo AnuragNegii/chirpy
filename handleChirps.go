@@ -76,6 +76,34 @@ func (apiConfig *apiConfig) hadnleChirps(w http.ResponseWriter, r *http.Request)
 
 func (apiConfig *apiConfig) GetChirps(w http.ResponseWriter, r *http.Request){
 	var chirps []Posts
+
+
+
+	author_id_string := r.URL.Query().Get("author_id")
+	if author_id_string != ""{
+		author_id, err := uuid.Parse(author_id_string)
+		if err != nil{
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("%v", err), nil)
+			return
+		}
+		arrChirps, err := apiConfig.db.GetChirpByAuthorId(r.Context(), author_id)
+		if err != nil{
+			respondWithError(w, http.StatusBadRequest, fmt.Sprintf("%v", err), nil)
+			return
+		}
+		for _, r := range arrChirps{
+			chirps = append(chirps, Posts{
+			ID: r.ID,
+			Created_at: r.CreatedAt,
+			Updated_at: r.UpdatedAt,
+			Body: r.Body,
+			User_id: r.UserID,
+			})
+		}
+		respondWithJson(w, http.StatusOK, chirps)
+		return
+	}
+
 	arrChirps, err := apiConfig.db.GetChirps(r.Context())
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("cant retrieve all chirps: %v", err), nil)

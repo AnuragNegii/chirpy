@@ -50,3 +50,14 @@ func (q *Queries) DeleteChirp(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteChirp, id)
 	return err
 }
+
+const upgradeUsers = `-- name: UpgradeUsers :exec
+UPDATE users
+SET is_chirpy_red = true
+WHERE id = $1
+`
+
+func (q *Queries) UpgradeUsers(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, upgradeUsers, id)
+	return err
+}

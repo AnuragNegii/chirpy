@@ -12,3 +12,8 @@ RETURNING *;
 -- name: DeleteChirp :exec
 DELETE FROM chirps
 WHERE id = $1;
+
+-- name: UpgradeUsers :exec
+UPDATE users
+SET is_chirpy_red = true
+WHERE id = $1;
